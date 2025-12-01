@@ -14,7 +14,7 @@ go install go.k6.io/xk6/cmd/xk6@latest
 
 2. Build a k6 binary with the xk6-mcp extension:
 ```bash
-xk6 build --with github.com/dgzlopes/xk6-mcp
+xk6 build --with github.com/grafana/xk6-mcp
 ```
 
 3. Import the mcp module in your script, at the top of your test script:

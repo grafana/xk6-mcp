@@ -1,4 +1,4 @@
-module github.com/dgzlopes/xk6-mcp
+module github.com/grafana/xk6-mcp
 
 go 1.24.0
 
