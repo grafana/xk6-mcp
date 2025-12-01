@@ -16,6 +16,7 @@ import (
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/metrics"
+	"golang.org/x/oauth2"
 )
 
 func init() {
@@ -25,6 +26,24 @@ func init() {
 // MCP is the root module struct
 type (
 	RootModule struct{}
+
+	// ClientConfig represents the configuration for the MCP client
+	ClientConfig struct {
+		// Stdio
+		Path  string
+		Args  []string
+		Env   map[string]string
+		Debug bool
+
+		// SSE and Streamable HTTP
+		BaseURL string
+		Timeout time.Duration
+		Auth    AuthConfig
+	}
+
+	AuthConfig struct {
+		BearerToken string
+	}
 )
 
 var mcp_metrics *mcpMetrics
@@ -77,19 +96,6 @@ type mcpMetrics struct {
 	RequestErrors   *metrics.Metric
 
 	TagsAndMeta *metrics.TagsAndMeta
-}
-
-// ClientConfig represents the configuration for the MCP client
-type ClientConfig struct {
-	// Stdio
-	Path  string
-	Args  []string
-	Env   map[string]string
-	Debug bool
-
-	// SSE and Streamable HTTP
-	BaseURL string
-	Timeout time.Duration
 }
 
 // Client wraps an MCP client session
@@ -149,7 +155,7 @@ func (m *MCPInstance) newSSEClient(c sobek.ConstructorCall, rt *sobek.Runtime) *
 
 	transport := &mcp.SSEClientTransport{
 		Endpoint:   cfg.BaseURL,
-		HTTPClient: m.newk6HTTPClient(),
+		HTTPClient: m.newk6HTTPClient(cfg),
 	}
 
 	clientObj := m.connect(rt, transport, true)
@@ -172,7 +178,7 @@ func (m *MCPInstance) newStreamableHTTPClient(c sobek.ConstructorCall, rt *sobek
 
 	transport := &mcp.StreamableClientTransport{
 		Endpoint:   cfg.BaseURL,
-		HTTPClient: m.newk6HTTPClient(),
+		HTTPClient: m.newk6HTTPClient(cfg),
 	}
 
 	clientObj := m.connect(rt, transport, false)
@@ -187,20 +193,37 @@ func (m *MCPInstance) newStreamableHTTPClient(c sobek.ConstructorCall, rt *sobek
 	}).ToObject(rt)
 }
 
-func (m *MCPInstance) newk6HTTPClient() *http.Client {
+func (m *MCPInstance) newk6HTTPClient(cfg ClientConfig) *http.Client {
 	var tlsConfig *tls.Config
-	if m.vu.State().TLSConfig != nil {
+	if m.vu.State() != nil && m.vu.State().TLSConfig != nil {
 		tlsConfig = m.vu.State().TLSConfig.Clone()
 		tlsConfig.NextProtos = []string{"http/1.1"}
 	}
 
+	transport := http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: tlsConfig,
+	}
+	if m.vu.State() != nil {
+		transport.DisableKeepAlives = m.vu.State().Options.NoConnectionReuse.ValueOrZero() || m.vu.State().Options.NoVUConnectionReuse.ValueOrZero()
+		transport.DialContext = m.vu.State().Dialer.DialContext
+	}
+
 	httpClient := &http.Client{
-		Transport: &http.Transport{
-			DialContext:       m.vu.State().Dialer.DialContext,
-			Proxy:             http.ProxyFromEnvironment,
-			TLSClientConfig:   tlsConfig,
-			DisableKeepAlives: m.vu.State().Options.NoConnectionReuse.ValueOrZero() || m.vu.State().Options.NoVUConnectionReuse.ValueOrZero(),
-		},
+		Transport: &transport,
+	}
+
+	if cfg.Auth.BearerToken != "" {
+		ctx := context.Background()
+
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
+
+		token := oauth2.Token{
+			AccessToken: cfg.Auth.BearerToken,
+		}
+		tokenSource := oauth2.StaticTokenSource(&token)
+
+		httpClient = oauth2.NewClient(ctx, tokenSource)
 	}
 
 	return httpClient
