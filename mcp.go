@@ -19,16 +19,28 @@ import (
 )
 
 func init() {
-	modules.Register("k6/x/mcp", new(MCP))
+	modules.Register("k6/x/mcp", New())
 }
 
 // MCP is the root module struct
-type MCP struct{}
+type (
+	RootModule struct{}
+)
 
 var mcp_metrics *mcpMetrics
 
+// New returns a pointer to a new RootModule instance.
+func New() *RootModule {
+	return &RootModule{}
+}
+
+var (
+	_ modules.Instance = &MCPInstance{}
+	_ modules.Module   = &RootModule{}
+)
+
 // NewModuleInstance initializes a new module instance
-func (*MCP) NewModuleInstance(vu modules.VU) modules.Instance {
+func (*RootModule) NewModuleInstance(vu modules.VU) modules.Instance {
 	env := vu.InitEnv()
 
 	logger := env.Logger.WithField("component", "xk6-mcp")
