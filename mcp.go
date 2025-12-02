@@ -274,7 +274,7 @@ func (c *Client) ListAllTools(r ListAllToolsParams) (*ListAllToolsResult, error)
 
 	var allTools []mcp.Tool
 	cursor := ""
-	//start := time.Now()
+	start := time.Now()
 	var err error
 	for {
 		params := &mcp.ListToolsParams{Meta: r.Meta}
@@ -299,7 +299,7 @@ func (c *Client) ListAllTools(r ListAllToolsParams) (*ListAllToolsResult, error)
 		cursor = result.NextCursor
 	}
 
-	//pushRequestMetrics(c, "ListAllTools", time.Since(start), err)
+	c.metrics.Push(c.ctx, "ListAllTools", time.Since(start), err)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tools: %w", err)
 	}
@@ -313,35 +313,34 @@ func (c *Client) CallTool(r mcp.CallToolParams) (*mcp.CallToolResult, error) {
 	start := time.Now()
 	result, err := c.session.CallTool(c.ctx, &r)
 	c.metrics.Push(c.ctx, "CallTool", time.Since(start), err)
-	//pushRequestMetrics(c, "CallTool", time.Since(start), err)
 	return result, err
 }
 
 func (c *Client) ListResources(r mcp.ListResourcesParams) (*mcp.ListResourcesResult, error) {
-	//start := time.Now()
+	start := time.Now()
 	res, err := c.session.ListResources(context.Background(), &r)
-	//pushRequestMetrics(c, "ListResources", time.Since(start), err)
+	c.metrics.Push(c.ctx, "ListResources", time.Since(start), err)
 	return res, err
 }
 
 func (c *Client) ReadResource(r mcp.ReadResourceParams) (*mcp.ReadResourceResult, error) {
-	//start := time.Now()
+	start := time.Now()
 	res, err := c.session.ReadResource(context.Background(), &r)
-	//pushRequestMetrics(c, "ReadResource", time.Since(start), err)
+	c.metrics.Push(c.ctx, "ReadResource", time.Since(start), err)
 	return res, err
 }
 
 func (c *Client) ListPrompts(r mcp.ListPromptsParams) (*mcp.ListPromptsResult, error) {
-	//start := time.Now()
+	start := time.Now()
 	res, err := c.session.ListPrompts(context.Background(), &r)
-	//pushRequestMetrics(c, "ListPrompts", time.Since(start), err)
+	c.metrics.Push(c.ctx, "ListPrompts", time.Since(start), err)
 	return res, err
 }
 
 func (c *Client) GetPrompt(r mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
-	//start := time.Now()
+	start := time.Now()
 	res, err := c.session.GetPrompt(context.Background(), &r)
-	//pushRequestMetrics(c, "GetPrompt", time.Since(start), err)
+	c.metrics.Push(c.ctx, "GetPrompt", time.Since(start), err)
 	return res, err
 }
 
@@ -360,7 +359,7 @@ func (c *Client) ListAllResources(r ListAllResourcesParams) (*ListAllResourcesRe
 
 	var allResources []mcp.Resource
 	cursor := ""
-	//start := time.Now()
+	start := time.Now()
 	var err error
 	for {
 		params := &mcp.ListResourcesParams{Meta: r.Meta}
@@ -385,7 +384,7 @@ func (c *Client) ListAllResources(r ListAllResourcesParams) (*ListAllResourcesRe
 		cursor = result.NextCursor
 	}
 
-	//pushRequestMetrics(c, "ListAllResources", time.Since(start), err)
+	c.metrics.Push(c.ctx, "ListAllResources", time.Since(start), err)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list resources: %w", err)
 	}
@@ -410,7 +409,7 @@ func (c *Client) ListAllPrompts(r ListAllPromptsParams) (*ListAllPromptsResult, 
 
 	var allPrompts []mcp.Prompt
 	cursor := ""
-	//start := time.Now()
+	start := time.Now()
 	var err error
 	for {
 		params := &mcp.ListPromptsParams{Meta: r.Meta}
@@ -435,7 +434,7 @@ func (c *Client) ListAllPrompts(r ListAllPromptsParams) (*ListAllPromptsResult, 
 		cursor = result.NextCursor
 	}
 
-	//pushRequestMetrics(c, "ListAllPrompts", time.Since(start), err)
+	c.metrics.Push(c.ctx, "ListAllPrompts", time.Since(start), err)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list prompts: %w", err)
 	}
