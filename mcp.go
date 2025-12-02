@@ -103,6 +103,10 @@ func (m *MCPInstance) Exports() modules.Exports {
 	}
 }
 
+func (m *MCPInstance) getContext() context.Context {
+	return m.vu.Context()
+}
+
 func (m *MCPInstance) newStdioClient(c sobek.ConstructorCall, rt *sobek.Runtime) *sobek.Object {
 	var cfg ClientConfig
 	if err := rt.ExportTo(c.Argument(0), &cfg); err != nil {
@@ -135,7 +139,7 @@ func (m *MCPInstance) newStdioClient(c sobek.ConstructorCall, rt *sobek.Runtime)
 	)
 
 	return rt.ToValue(&Client{
-		ctx:     m.vu.Context(),
+		ctx:     m.getContext(),
 		session: client.session,
 		metrics: mcpMetrics,
 	}).ToObject(rt)
@@ -165,7 +169,7 @@ func (m *MCPInstance) newSSEClient(c sobek.ConstructorCall, rt *sobek.Runtime) *
 	)
 
 	return rt.ToValue(&Client{
-		ctx:     m.vu.Context(),
+		ctx:     m.getContext(),
 		session: client.session,
 		metrics: mcpMetrics,
 	}).ToObject(rt)
@@ -195,7 +199,7 @@ func (m *MCPInstance) newStreamableHTTPClient(c sobek.ConstructorCall, rt *sobek
 	)
 
 	return rt.ToValue(&Client{
-		ctx:     m.vu.Context(),
+		ctx:     m.getContext(),
 		session: client.session,
 		metrics: mcpMetrics,
 	}).ToObject(rt)
@@ -240,18 +244,8 @@ func (m *MCPInstance) newk6HTTPClient(cfg ClientConfig) *http.Client {
 }
 
 func (m *MCPInstance) connect(rt *sobek.Runtime, transport mcp.Transport, isSSE bool) *sobek.Object {
-	var ctx context.Context
-	var cancel context.CancelFunc
-	if isSSE {
-		ctx = context.Background()
-		cancel = func() {}
-	} else {
-		ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
-	}
-	defer cancel()
-
 	client := mcp.NewClient(&mcp.Implementation{Name: "k6", Version: "1.0.0"}, nil)
-	session, err := client.Connect(ctx, transport, nil)
+	session, err := client.Connect(m.getContext(), transport, nil)
 	if err != nil {
 		common.Throw(rt, fmt.Errorf("connection error: %w", err))
 	}
@@ -260,13 +254,13 @@ func (m *MCPInstance) connect(rt *sobek.Runtime, transport mcp.Transport, isSSE 
 }
 
 func (c *Client) Ping() bool {
-	err := c.session.Ping(context.Background(), &mcp.PingParams{})
+	err := c.session.Ping(c.ctx, &mcp.PingParams{})
 	return err == nil
 }
 
 func (c *Client) ListTools(r mcp.ListToolsParams) (*mcp.ListToolsResult, error) {
 	start := time.Now()
-	result, err := c.session.ListTools(context.Background(), &r)
+	result, err := c.session.ListTools(c.ctx, &r)
 	c.metrics.Push(c.ctx, ListToolsMethod, time.Since(start), err)
 	return result, err
 }
@@ -294,7 +288,7 @@ func (c *Client) ListAllTools(r ListAllToolsParams) (*ListAllToolsResult, error)
 			params.Cursor = cursor
 		}
 		var result *mcp.ListToolsResult
-		result, err = c.session.ListTools(context.Background(), params)
+		result, err = c.session.ListTools(c.ctx, params)
 		if err != nil {
 			break
 		}
@@ -330,28 +324,28 @@ func (c *Client) CallTool(r mcp.CallToolParams) (*mcp.CallToolResult, error) {
 
 func (c *Client) ListResources(r mcp.ListResourcesParams) (*mcp.ListResourcesResult, error) {
 	start := time.Now()
-	res, err := c.session.ListResources(context.Background(), &r)
+	res, err := c.session.ListResources(c.ctx, &r)
 	c.metrics.Push(c.ctx, ListResourcesMethod, time.Since(start), err)
 	return res, err
 }
 
 func (c *Client) ReadResource(r mcp.ReadResourceParams) (*mcp.ReadResourceResult, error) {
 	start := time.Now()
-	res, err := c.session.ReadResource(context.Background(), &r)
+	res, err := c.session.ReadResource(c.ctx, &r)
 	c.metrics.Push(c.ctx, ReadResourceMethod, time.Since(start), err)
 	return res, err
 }
 
 func (c *Client) ListPrompts(r mcp.ListPromptsParams) (*mcp.ListPromptsResult, error) {
 	start := time.Now()
-	res, err := c.session.ListPrompts(context.Background(), &r)
+	res, err := c.session.ListPrompts(c.ctx, &r)
 	c.metrics.Push(c.ctx, ListPromptsMethod, time.Since(start), err)
 	return res, err
 }
 
 func (c *Client) GetPrompt(r mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
 	start := time.Now()
-	res, err := c.session.GetPrompt(context.Background(), &r)
+	res, err := c.session.GetPrompt(c.ctx, &r)
 	c.metrics.Push(c.ctx, GetPromptMethod, time.Since(start), err)
 	return res, err
 }
@@ -379,7 +373,7 @@ func (c *Client) ListAllResources(r ListAllResourcesParams) (*ListAllResourcesRe
 			params.Cursor = cursor
 		}
 		var result *mcp.ListResourcesResult
-		result, err = c.session.ListResources(context.Background(), params)
+		result, err = c.session.ListResources(c.ctx, params)
 		if err != nil {
 			break
 		}
@@ -429,7 +423,7 @@ func (c *Client) ListAllPrompts(r ListAllPromptsParams) (*ListAllPromptsResult, 
 			params.Cursor = cursor
 		}
 		var result *mcp.ListPromptsResult
-		result, err = c.session.ListPrompts(context.Background(), params)
+		result, err = c.session.ListPrompts(c.ctx, params)
 		if err != nil {
 			break
 		}
