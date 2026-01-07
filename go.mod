@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.23.7
 
 require (
-	github.com/grafana/sobek v0.0.0-20250320150027-203dc85b6d98
+	github.com/grafana/sobek v0.0.0-20251209155516-22d1085c20a8
 	github.com/modelcontextprotocol/go-sdk v0.1.0
 	github.com/sirupsen/logrus v1.9.3
 	go.k6.io/k6 v0.57.0
