@@ -2,7 +2,7 @@ module github.com/dgzlopes/xk6-mcp
 
 go 1.24.0
 
-toolchain go1.24.13
+toolchain go1.26.0
 
 require (
 	github.com/grafana/sobek v0.0.0-20250320150027-203dc85b6d98
