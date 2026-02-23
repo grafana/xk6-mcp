@@ -78,12 +78,14 @@ type ClientConfig struct {
 	// SSE and Streamable HTTP
 	BaseURL string
 	Timeout time.Duration
+
+	// Optional HTTP headers (e.g. Authorization)
+	Headers map[string]string
 }
 
 // Client wraps an MCP client session
 type Client struct {
-	session *mcp.ClientSession
-
+	session  *mcp.ClientSession
 	k6_state *lib.State
 }
 
@@ -133,8 +135,9 @@ func (m *MCPInstance) newSSEClient(c sobek.ConstructorCall, rt *sobek.Runtime) *
 		common.Throw(rt, fmt.Errorf("invalid config: %w", err))
 	}
 
+	// Use HTTP client with headers
 	transport := mcp.NewSSEClientTransport(cfg.BaseURL, &mcp.SSEClientTransportOptions{
-		HTTPClient: m.newk6HTTPClient(),
+		HTTPClient: m.newk6HTTPClientWithHeaders(cfg.Headers),
 	})
 
 	clientObj := m.connect(rt, transport, true)
@@ -155,8 +158,9 @@ func (m *MCPInstance) newStreamableHTTPClient(c sobek.ConstructorCall, rt *sobek
 		common.Throw(rt, fmt.Errorf("invalid config: %w", err))
 	}
 
+	// Use HTTP client with headers
 	transport := mcp.NewStreamableClientTransport(cfg.BaseURL, &mcp.StreamableClientTransportOptions{
-		HTTPClient: m.newk6HTTPClient(),
+		HTTPClient: m.newk6HTTPClientWithHeaders(cfg.Headers),
 	})
 
 	clientObj := m.connect(rt, transport, false)
@@ -188,6 +192,33 @@ func (m *MCPInstance) newk6HTTPClient() *http.Client {
 	}
 
 	return httpClient
+}
+
+// Added: helper to inject custom headers
+func (m *MCPInstance) newk6HTTPClientWithHeaders(headers map[string]string) *http.Client {
+	baseClient := m.newk6HTTPClient()
+	if len(headers) == 0 {
+		return baseClient
+	}
+
+	baseTransport := baseClient.Transport
+	baseClient.Transport = roundTripperWithHeaders{
+		headers:   headers,
+		transport: baseTransport,
+	}
+	return baseClient
+}
+
+type roundTripperWithHeaders struct {
+	headers   map[string]string
+	transport http.RoundTripper
+}
+
+func (r roundTripperWithHeaders) RoundTrip(req *http.Request) (*http.Response, error) {
+	for k, v := range r.headers {
+		req.Header.Set(k, v)
+	}
+	return r.transport.RoundTrip(req)
 }
 
 func (m *MCPInstance) connect(rt *sobek.Runtime, transport mcp.Transport, isSSE bool) *sobek.Object {
