@@ -6,7 +6,7 @@ toolchain go1.24.13
 
 require (
 	github.com/grafana/sobek v0.0.0-20250320150027-203dc85b6d98
-	github.com/modelcontextprotocol/go-sdk v1.3.1
+	github.com/modelcontextprotocol/go-sdk v1.4.0
 	github.com/sirupsen/logrus v1.9.3
 	go.k6.io/k6 v0.57.0
 )
@@ -47,7 +47,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
 	golang.org/x/net v0.45.0 // indirect
-	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
