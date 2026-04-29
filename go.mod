@@ -3,7 +3,7 @@ module github.com/dgzlopes/xk6-mcp
 go 1.25.0
 
 require (
-	github.com/grafana/sobek v0.0.0-20250320150027-203dc85b6d98
+	github.com/grafana/sobek v0.0.0-20260429085637-a66d4790012b
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/sirupsen/logrus v1.9.3
 	go.k6.io/k6 v0.57.0
@@ -13,7 +13,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/dlclark/regexp2 v1.11.5 // indirect
+	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/evanw/esbuild v0.25.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
